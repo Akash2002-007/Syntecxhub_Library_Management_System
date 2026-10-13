@@ -1,0 +1,166 @@
+package com.nit;
+import java.sql.*;
+import java.util.Scanner;
+
+public class StudentRegistrationSystem {
+    static final String URL =
+        "jdbc:mysql://localhost:3306/stdb";
+    static final String USER = "root";
+    static final String PASSWORD = "root";
+    static Scanner sc = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        while (true) {
+            System.out.println("\n--- Student Registration System ---");
+            System.out.println("1. Add Student");
+            System.out.println("2. View Students");
+            System.out.println("3. Update Student");
+            System.out.println("4. Delete Student");
+            System.out.println("5. Exit");
+            System.out.print("Enter choice: ");
+
+            int choice;
+            try {
+                choice = Integer.parseInt(sc.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Enter a valid number!");
+                continue;
+            }
+
+            switch (choice) {
+                case 1: addStudent(); break;
+                case 2: viewStudents(); break;
+                case 3: updateStudent(); break;
+                case 4: deleteStudent(); break;
+                case 5:
+                    System.out.println("Thank you!");
+                    sc.close();
+                    return;
+                default:
+                    System.out.println("Invalid choice!");
+            }
+        }
+    }
+
+    // CREATE
+    static void addStudent() {
+        String sql = "INSERT INTO student(name,email,course,age) VALUES(?,?,?,?)";
+        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            System.out.print("Name: ");
+            String name = sc.nextLine().trim();
+            System.out.print("Email: ");
+            String email = sc.nextLine().trim();
+            System.out.print("Course: ");
+            String course = sc.nextLine().trim();
+            System.out.print("Age: ");
+            int age = Integer.parseInt(sc.nextLine());
+
+            if (name.isEmpty() || email.isEmpty() || course.isEmpty()
+                    || age <= 0 || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                System.out.println("Invalid student details!");
+                return;
+            }
+
+            ps.setString(1, name);
+            ps.setString(2, email);
+            ps.setString(3, course);
+            ps.setInt(4, age);
+            ps.executeUpdate();
+            System.out.println("Student added successfully!");
+
+        } catch (SQLException e) {
+            System.out.println("Database error: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            System.out.println("Age must be a number!");
+        }
+    }
+
+    // READ
+    static void viewStudents() {
+        String sql = "SELECT * FROM student";
+        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement st = con.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            boolean found = false;
+            while (rs.next()) {
+                found = true;
+                System.out.println("\nID: " + rs.getInt("id")
+                    + "\nName: " + rs.getString("name")
+                    + "\nEmail: " + rs.getString("email")
+                    + "\nCourse: " + rs.getString("course")
+                    + "\nAge: " + rs.getInt("age"));
+            }
+            if (!found) System.out.println("No students found!");
+
+        } catch (SQLException e) {
+            System.out.println("Database error: " + e.getMessage());
+        }
+    }
+
+    // UPDATE
+    static void updateStudent() {
+        String sql = "UPDATE student SET name=?, email=?, course=?, age=? WHERE id=?";
+        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            System.out.print("Student ID: ");
+            int id = Integer.parseInt(sc.nextLine());
+            System.out.print("New name: ");
+            String name = sc.nextLine().trim();
+            System.out.print("New email: ");
+            String email = sc.nextLine().trim();
+            System.out.print("New course: ");
+            String course = sc.nextLine().trim();
+            System.out.print("New age: ");
+            int age = Integer.parseInt(sc.nextLine());
+
+            if (id <= 0 || name.isEmpty() || email.isEmpty()
+                    || course.isEmpty() || age <= 0
+                    || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                System.out.println("Invalid details!");
+                return;
+            }
+
+            ps.setString(1, name);
+            ps.setString(2, email);
+            ps.setString(3, course);
+            ps.setInt(4, age);
+            ps.setInt(5, id);
+
+            int rows = ps.executeUpdate();
+            System.out.println(rows > 0 ? "Student updated!" : "Student ID not found!");
+
+        } catch (SQLException e) {
+            System.out.println("Database error: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            System.out.println("ID and age must be numbers!");
+        }
+    }
+
+    // DELETE
+    static void deleteStudent() {
+        String sql = "DELETE FROM student WHERE id=?";
+        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            System.out.print("Student ID to delete: ");
+            int id = Integer.parseInt(sc.nextLine());
+            if (id <= 0) {
+                System.out.println("Invalid ID!");
+                return;
+            }
+
+            ps.setInt(1, id);
+            int rows = ps.executeUpdate();
+            System.out.println(rows > 0 ? "Student deleted!" : "Student ID not found!");
+
+        } catch (SQLException e) {
+            System.out.println("Database error: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            System.out.println("ID must be a number!");
+        }
+    }
+}
